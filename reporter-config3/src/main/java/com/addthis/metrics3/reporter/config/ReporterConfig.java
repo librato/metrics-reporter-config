@@ -45,6 +45,8 @@ public class ReporterConfig extends AbstractReporterConfig
     private List<GraphiteReporterConfig> graphite;
     @Valid
     private List<RiemannReporterConfig> riemann;
+    @Valid
+    private List<LibratoReporterConfig> librato;
 
     public List<ConsoleReporterConfig> getConsole()
     {
@@ -94,6 +96,14 @@ public class ReporterConfig extends AbstractReporterConfig
     public void setRiemann(List<RiemannReporterConfig> riemann)
     {
         this.riemann = riemann;
+    }
+
+    public List<LibratoReporterConfig> getLibrato() {
+        return librato;
+    }
+
+    public void setLibrato(List<LibratoReporterConfig> librato) {
+        this.librato = librato;
     }
 
     public boolean enableConsole(MetricRegistry registry)
@@ -186,6 +196,25 @@ public class ReporterConfig extends AbstractReporterConfig
         return !failures;
     }
 
+
+    public boolean enableLibrato(MetricRegistry registry)
+    {
+        boolean failures = false;
+        if (librato == null)
+        {
+            log.debug("Asked to enable librato, but it was not configured");
+            return false;
+        }
+        for (LibratoReporterConfig libratoConfig : librato) {
+            if (!libratoConfig.enable(registry))
+            {
+                failures = true;
+            }
+        }
+        return !failures;
+    }
+
+
     public boolean enableAll(MetricRegistry registry)
     {
         boolean enabled = false;
@@ -224,6 +253,14 @@ public class ReporterConfig extends AbstractReporterConfig
                 enabled = true;
             }
         }
+        if (librato != null)
+        {
+            if (enableLibrato(registry))
+            {
+                enabled = true;
+            }
+        }
+
         if (!enabled)
         {
             log.warn("No reporters were succesfully enabled");
@@ -246,10 +283,12 @@ public class ReporterConfig extends AbstractReporterConfig
         report(ganglia);
         report(graphite);
         report(riemann);
+        report(librato);
     }
 
     public static ReporterConfig loadFromFileAndValidate(String fileName) throws IOException
     {
+
         ReporterConfig config = loadFromFile(fileName);
         if (validate(config))
         {
