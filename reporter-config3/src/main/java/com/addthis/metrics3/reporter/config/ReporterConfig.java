@@ -18,11 +18,14 @@ import javax.validation.Valid;
 
 import java.io.IOException;
 
+import java.lang.management.ManagementFactory;
 import java.util.List;
 
 import com.addthis.metrics.reporter.config.AbstractReporterConfig;
+import com.codahale.metrics.JvmAttributeGaugeSet;
 import com.codahale.metrics.MetricRegistry;
 
+import com.codahale.metrics.jvm.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -265,7 +268,21 @@ public class ReporterConfig extends AbstractReporterConfig
         {
             log.warn("No reporters were succesfully enabled");
         }
+
+        registerJvmMetrics(registry);
+
         return enabled;
+    }
+
+    private void registerJvmMetrics(MetricRegistry registry) {
+        registry.register("jvm.attribute", new JvmAttributeGaugeSet());
+        registry.register("jvm.buffers", new BufferPoolMetricSet(ManagementFactory.getPlatformMBeanServer()));
+        registry.register("jvm.classloader", new ClassLoadingGaugeSet());
+        registry.register("jvm.filedescriptor", new FileDescriptorRatioGauge());
+        registry.register("jvm.gc", new GarbageCollectorMetricSet());
+        registry.register("jvm.memory", new MemoryUsageGaugeSet());
+        registry.register("jvm.threads", new ThreadStatesGaugeSet());
+
     }
 
     private void report(List<? extends MetricsReporterConfigThree> reporters) {
